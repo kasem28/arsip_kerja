@@ -7,7 +7,6 @@ st.set_page_config(page_title="Aplikasi Arsip Kerja", page_icon="📁", layout="
 
 # Inisialisasi Database Sederhana menggunakan Session State
 if 'data_arsip' not in st.session_state:
-    # Menambahkan kolom 'File Dokumentasi' ke dalam struktur data
     st.session_state.data_arsip = pd.DataFrame(columns=['Tanggal', 'Kategori', 'Judul Dokumen', 'Keterangan', 'File Dokumentasi'])
 
 st.sidebar.title("📁 Menu Arsip")
@@ -21,24 +20,31 @@ menu = st.sidebar.radio("Navigasi:", [
     "Dokumentasi & Skrip"
 ])
 
-# Fungsi untuk menambah arsip dengan fitur upload foto
+# Fungsi untuk menambah arsip dengan kalender, waktu, dan upload foto
 def tambah_arsip(kategori):
     st.subheader(f"Tambah Arsip Baru: {kategori}")
     with st.form(key=f"form_{kategori}", clear_on_submit=True):
         judul = st.text_input("Judul Dokumen / Kegiatan")
-        keterangan = st.text_area("Keterangan Singkat / Link Google Drive")
         
-        # Fitur upload foto dokumentasi
+        # Penambahan fitur Kalender dan Waktu
+        col1, col2 = st.columns(2)
+        with col1:
+            tanggal_input = st.date_input("Tanggal Kegiatan", datetime.now().date())
+        with col2:
+            waktu_input = st.time_input("Waktu Kegiatan", datetime.now().time())
+            
+        keterangan = st.text_area("Keterangan Singkat / Link Google Drive")
         foto = st.file_uploader("Upload Foto Dokumentasi (Opsional)", type=["jpg", "jpeg", "png"])
         
         submit = st.form_submit_button("Simpan Arsip")
         
         if submit and judul:
-            # Mengambil nama file jika ada foto yang diunggah
+            # Menggabungkan input tanggal dan waktu menjadi satu format string
+            waktu_lengkap = f"{tanggal_input.strftime('%Y-%m-%d')} {waktu_input.strftime('%H:%M')}"
             nama_file = foto.name if foto is not None else "Tidak ada file"
             
             file_baru = pd.DataFrame({
-                'Tanggal': [datetime.now().strftime("%Y-%m-%d %H:%M")],
+                'Tanggal': [waktu_lengkap],
                 'Kategori': [kategori],
                 'Judul Dokumen': [judul],
                 'Keterangan': [keterangan],
@@ -54,8 +60,9 @@ if menu == "Dashboard":
     st.title("🏠 Dashboard Arsip Kerja")
     st.write("Selamat datang di sistem pengarsipan digital.")
     st.write("### Riwayat Arsip Terbaru")
+    
+    # Menampilkan data hari ini atau keseluruhan di Dashboard
     if not st.session_state.data_arsip.empty:
-        # Menampilkan dataframe dengan kolom yang baru
         st.dataframe(st.session_state.data_arsip.sort_values(by="Tanggal", ascending=False), use_container_width=True)
     else:
         st.info("Belum ada data yang diarsipkan.")
